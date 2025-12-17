@@ -60,13 +60,13 @@ Explanation of optional arguments:
 - merge: path to directory with the partial data, will be used to merge the final results with the input point clouds
 - bpcc: use processing steps designated for files generated with Building-Point-Cloud-Completion
 
-#### Other useful methods
+### Other useful methods
 The framework provides additional helper functions for converting and sampling point clouds. See the `pcc-haus.py` script for the full list of commands.
 
-### Examples
+## Examples
 All scenarios assume that the input data is under `partial_data/`, the ground-truth data is under `reference_data/` and all framework results will be saved under `processing_results/`.
 
-#### Scenario 1: use the PCC-HAUS framework with SeedFormer or SVDFormer model trained on ShapeNet-55
+### Scenario 1: use the PCC-HAUS framework with SeedFormer or SVDFormer model trained on ShapeNet-55
 1. Create partitioned data.
 ```
 python pcc-haus.py sf_preproc partial_data processing_results --reference_dir reference_data --create_variants
@@ -88,7 +88,7 @@ python pcc-haus.py sf_postproc outputs/00010000/ processing_results/ --create_va
 ```
 5. Locate the final results under `processing_results/results/`.
 
-#### Scenario 2: use the PCC-HAUS framework with SeedFormer or SVDFormer model trained on PCN
+### Scenario 2: use the PCC-HAUS framework with SeedFormer or SVDFormer model trained on PCN
 1. Create partitioned data.
 ```
 python pcc-haus.py sf_preproc partial_data processing_results --reference_dir reference_data --create_variants -pcn
@@ -110,7 +110,7 @@ python pcc-haus.py sf_postproc outputs/00010000/ processing_results/ --create_va
 ```
 5. Locate the final results under `processing_results/results/`.
 
-#### Scenario 3: use the PCC-HAUS framework with PoinTr or AdaPoinTr
+### Scenario 3: use the PCC-HAUS framework with PoinTr or AdaPoinTr
 1. Create partitioned data.
 ```
 python pcc-haus.py sf_preproc partial_data processing_results --create_variants --prefix ""

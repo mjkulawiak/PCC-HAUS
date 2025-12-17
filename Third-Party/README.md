@@ -9,6 +9,13 @@ This directory contains a collection of acknowledged state-of-the-art point clou
 5. Support for exporting .xyz files was added for both PoinTr implementations;
 6. Farthest Point Sampling is now automatically performed for SVDFormer if the input data consists of more than 2048 points.
 
+### Original repositories
+Addresses of the original repositories for each project are provided below:
+- [Building-PCC](https://github.com/tudelft3d/Building-PCC-Building-Point-Cloud-Completion-Benchmarks)
+- [PoinTr](https://github.com/yuxumin/PoinTr)
+- [SeedFormer](https://github.com/hrzhou2/seedformer)
+- [SVDFormer](https://github.com/czvvd/SVDFormer_PointSea)
+
 ## Python environment
 All methods in this collection can be used within a shared Python environment. The following commands were tested with an Anaconda platform installed on Manjaro.
 ```

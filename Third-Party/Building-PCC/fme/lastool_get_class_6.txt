@@ -1,3 +1,0 @@
-Extract building from input AHN point clouds using lastool:
-
-	las2las64 -i xxx\xxx.LAZ -o xxx\xxx.LAZ  -keep_class 6

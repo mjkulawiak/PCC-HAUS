@@ -1,7 +1,7 @@
 # Point cloud completion methods
 
 ## Introduction
-This directory contains a collection of acknowledged state-of-the-art point cloud completion methods. Several new features were implemented in order to improve their robustness, with the major contributions listed below:
+This directory contains a collection of acknowledged state-of-the-art point cloud completion frameworks. Several new features were implemented in order to improve their robustness, with the major contributions listed below:
 1. The functionality of SeedFormer and SVDFormer was extended to provide support for processing custom partial point clouds for models trained on ShapeNet-55, as the original code relied on automatic generation of incomplete data from fixed viewpoints;
 2. Better exception handling was implemented for all completion methods to prevent situations when a random error interrupts the processing of all remaining files;
 3. Point clouds reconstructed by SVDFormer are now saved on the disk, instead of being used only for metrics calculation;

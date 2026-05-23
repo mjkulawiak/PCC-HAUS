@@ -16,7 +16,7 @@ pip install -r requirements.txt
 ### Usage
 The process is semi-automatic and is performed in three steps:
 1. Preprocessing of the partial data;
-2. Executing the inference command of the preferred point cloud completion method;
+2. Executing the inference command of the preferred point cloud completion framework;
 3. Postprocessing the completion results.
 
 Example scenarios are provided at the bottom of this page.

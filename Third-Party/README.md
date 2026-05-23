@@ -10,31 +10,19 @@ This directory contains a collection of acknowledged state-of-the-art point clou
 
 ### Original repositories
 Addresses of the original repositories for each project are provided below:
-- [Building-PCC](https://github.com/tudelft3d/Building-PCC-Building-Point-Cloud-Completion-Benchmarks)
 - [PoinTr](https://github.com/yuxumin/PoinTr)
 - [SeedFormer](https://github.com/hrzhou2/seedformer)
 - [SVDFormer](https://github.com/czvvd/SVDFormer_PointSea)
 
 ## Python environment
-All methods in this collection can be used within a shared Python environment. The following commands were tested with an Anaconda platform installed on Manjaro.
+All methods in this collection can be used within a shared Python environment. The following commands were tested with an Anaconda platform installed on EndeavourOS.
 ```
-conda create --name seed python=3.10 -y
-conda activate seed
+conda create --name svd python=3.11 -y
+conda activate svd
 
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
-conda install nvidia/label/cuda-11.8.0::cuda
-conda install nvidia/label/cuda-11.8.0::cuda-cudart-dev nvidia/label/cuda-11.8.0::cuda-cudart
-conda install conda-forge::gcc_linux-64=11.4.0 gxx_linux-64=11.4.0
-conda install nvidia/label/cuda-11.8.0::cuda-nvcc
-conda install nvidia/label/cuda-11.8.0::libcusparse-dev nvidia/label/cuda-11.8.0::libcusparse
-conda install nvidia/label/cuda-11.8.0::libcublas-dev nvidia/label/cuda-11.8.0::libcublas
-
+pip install torch==2.7.0 torchvision==0.22.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128
+conda install -c nvidia cuda-toolkit=12.8.0
 pip3 install -r requirements.txt
-```
-The following command must be called each time the `seed` environment is activated:
-```
-export CUDA_HOME=$CONDA_PREFIX
 ```
 CUDA support can be tested like this:
 ```

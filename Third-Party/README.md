@@ -15,7 +15,7 @@ Addresses of the original repositories for each project are provided below:
 - [SVDFormer](https://github.com/czvvd/SVDFormer_PointSea)
 
 ## Python environment
-All methods in this collection can be used within a shared Python environment. The following commands were tested with an Anaconda platform installed on EndeavourOS.
+All methods in this collection can be used within a shared Python environment with CUDA support. The following commands were tested with an Anaconda platform installed on EndeavourOS.
 ```
 conda create --name svd python=3.11 -y
 conda activate svd

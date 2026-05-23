@@ -40,7 +40,7 @@ Explanation of optional arguments:
 - pcn: use PCN format instead of ShapeNet-55
 
 ####  2. Run the point cloud completion inference command
-You may need to update the configuration files for the preferred point cloud completion method before running the inference commands.
+This step assumes that the preferred point cloud completion framework is already installed in the system. PCC-HAUS has been extensively tested with PoinTr, AdaPoinTr, SeedFormer and SVDFormer. Please see the `Examples` section at the bottom of this page for important details on updating the configuration files.
 
 ####  3. Perform postprocessing of the completion results
 ```

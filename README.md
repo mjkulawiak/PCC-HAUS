@@ -1,11 +1,7 @@
 # PCC-HAUS: Point Cloud Completion framework for High-Altitude Urban Scanning
 
-## Introduction
-This repository contains the PCC-HAUS framework for restoring large, incomplete point clouds of buildings with the use of point cloud completion models designed for small data.
+This repository contains the PCC-HAUS framework for restoring large, incomplete point clouds of buildings with the use of point cloud completion models designed for small data. The framework is dedicated to high-altitude lidar scans.
 
-Source code for PCC-HAUS is provided in the `Framework` directory.
+The `Third-Party` directory provides several state-of-the-art point cloud completion frameworks with new features, along with instructions for setting up a shared Python environment with CUDA support.
 
-Selected point cloud completion methods, along with new features, are provided in the `Third-Party` directory.
-
-## License
-The PCC-HAUS framework and most projects in the `Third-Party` directory are provided under the terms of the MIT License. Building-PCC is provided under GPL version 3 or later. For more details, please see the contents of the `LICENSE` files provided for each project.
+The `Framework` directory provides the source code of PCC-HAUS along with detailed usage instructions.

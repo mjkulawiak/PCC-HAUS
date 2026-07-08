@@ -65,22 +65,24 @@ if __name__ == '__main__':
     sf_preproc_parser = subParser.add_parser('sf_preproc')
     sf_preproc_parser.add_argument('input_dir', type=str, help='path to input dir')
     sf_preproc_parser.add_argument('output_dir', type=str, help='path to output dir')
+    sf_preproc_parser.add_argument('preset_file', type=str, help='path to the preset file')
     sf_preproc_parser.add_argument('-rf', '-rd', '--reference_dir', type=str, default=None, help='path to dir with reference complete points')
-    sf_preproc_parser.add_argument('-opt', '--optimal_points', type=int, default=2048, help='optimal number of points per sector')
-    sf_preproc_parser.add_argument('-max', '--max_points', type=int, default=6144, help='max number of points per sector, also min required for sectorization')
-    sf_preproc_parser.add_argument('-p', '--prefix', type=str, default='00010000-', help='number prefix used for buildings')
-    sf_preproc_parser.add_argument('-cv', '--create_variants', default=False, action="store_true", help='create variant sectors with different offsets')
-    sf_preproc_parser.add_argument('-pcn', default=False, action="store_true", help='use PCN format instead of ShapeNet-55')
+    sf_preproc_parser.add_argument('-or', '--old_recalculation', default=False, action="store_true", help='use legacy coords recalculation method')
+    sf_preproc_parser.add_argument('-nr', '--no_resampling', default=False, action="store_true", help='keep the original number of points')
+    sf_preproc_parser.add_argument('-rtr', '--roof_thinning_ratio', type=float, default=-1.0, help='optional roof removal ratio if value is between 0 and 1')
+
+    sf_inference_parser = subParser.add_parser('sf_inference')
+    sf_inference_parser.add_argument('input_dir', type=str, help='path to dir used for preprocessing')
+    sf_inference_parser.add_argument('preset_file', type=str, help='path to the preset file')
 
     sf_postproc_parser = subParser.add_parser('sf_postproc')
-    sf_postproc_parser.add_argument('input_dir', type=str, help='path to dir with SeedFormer results (containing .ply files)')
+    sf_postproc_parser.add_argument('input_dir', type=str, help='path to dir with completion results (usually containing .ply files)')
     sf_postproc_parser.add_argument('output_dir', type=str, help='path to dir used for preprocessing')
-    sf_postproc_parser.add_argument('-p', '--prefix', type=str, default='00010000-', help='number prefix used for buildings')
-    sf_postproc_parser.add_argument('-cv', '--create_variants', default=False, action="store_true", help='include variant sectors with different offsets')
-    sf_postproc_parser.add_argument('-rd', '--remove_duplicates', type=int, default=1, help='remove duplicate points')
-    sf_postproc_parser.add_argument('-bpcc', default=False, action="store_true", help='Building-Point-Cloud-Completion version')
+    sf_postproc_parser.add_argument('preset_file', type=str, help='path to the preset file')
+    sf_postproc_parser.add_argument('-or', '--old_recalculation', default=False, action="store_true", help='use legacy coords recalculation method')
     sf_postproc_parser.add_argument('--results_dirname', type=str, default='results', help='name of the output directory with final results')
     sf_postproc_parser.add_argument('-m', '--merge', type=str, default=None, help='path to input dir, results will be merged with input point clouds')
+    sf_postproc_parser.add_argument('-ozw', '--outlier_z_weight', type=float, default=1.0, help='Z axis weight, meant for building walls')
 
     args = mainParser.parse_args()
 
@@ -102,18 +104,21 @@ if __name__ == '__main__':
         pcd_io.downsample_file(args.input_file, args.output_file, args.voxel_size)
     
     elif args.command == 'sf_preproc':
-        sectors.sf_preprocess(inDirPartial=args.input_dir, outDir=args.output_dir, inDirComplete=args.reference_dir,
-                              optimalPointCount=args.optimal_points, maxSectPoints=args.max_points, numberPrefix=args.prefix,
-                              createVariants=args.create_variants, oldRecalculation=False, pcn=args.pcn,
-                              minPointsForSampling=1536)
+        minPointsForSampling:int=1536
+        if (args.no_resampling):
+            minPointsForSampling:int=sys.maxsize
+        sectors.sf_preprocess_preset(inDirPartial=args.input_dir, outDir=args.output_dir, presetPath=args.preset_file, inDirComplete=args.reference_dir,
+                                     oldRecalculation=args.old_recalculation, minPointsForSampling=minPointsForSampling, roof_thinning_ratio=args.roof_thinning_ratio)
     
+    elif args.command == 'sf_inference':
+        sectors.sf_inference(preprocessDir=args.input_dir, presetPath=args.preset_file)
+
     elif args.command == 'sf_postproc':
-        sectors.sf_postprocess(predictedDir=args.input_dir, preprocessDir=args.output_dir, numberPrefix=args.prefix, createVariants=args.create_variants,
-                               oldRecalculation=False, removeDuplicates=bool(args.remove_duplicates), bpcc=args.bpcc,
-                               resultsDirName=args.results_dirname, inDirPartial=args.merge)
+        sectors.sf_postprocess_preset(predictedDir=args.input_dir, preprocessDir=args.output_dir, presetPath=args.preset_file, oldRecalculation=args.old_recalculation,
+                          resultsDirName=args.results_dirname, inDirPartial=args.merge, z_weight=args.outlier_z_weight)
     
     else:
-        print('Supported commands:  convert  batch_convert  sample  sample_dir  downsample  sf_preproc  sf_postproc')
+        print('Supported commands:  convert  batch_convert  sample  sample_dir  downsample  sf_preproc  sf_inference  sf_postproc')
 
     print(f'\npc_tools end: {datetime.datetime.now().strftime("%Y.%m.%d %H:%M:%S.%f")}')
     

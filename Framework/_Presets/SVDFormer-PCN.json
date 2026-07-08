@@ -1,0 +1,24 @@
+{
+  "create_variants": true,
+  "prefix": "00010000-",
+  "copiedOutputsDir": "../predicted",
+  "preprocessing": {
+    "optimal_points": 2048,
+    "max_points": 6144
+  },
+  "pccConfig": {
+    "type": ["SVDFormer", "PCN"],
+    "fullRootDir": "/home/darkmark/Documents/Python/SVDFormer/SVDFormer_PointSea-main",
+    "runDir": ".",
+    "inferenceCommand": "python main_pcn.py --test",
+    "directoriesToClear": ["demo/PCN/test", "SVDFormer_PCN/04460130"],
+    "partialDir": "demo/PCN/test/partial",
+    "completeDir": "demo/PCN/test/complete",
+    "datasetConfigDir": "datasets",
+    "outputsDir": "SVDFormer_PCN/04460130"
+  },
+  "postprocessing": {
+    "remove_duplicates": true,
+    "max_outlier_distances": [0.005, 0.006, 0.007, 0.008]
+  }
+}

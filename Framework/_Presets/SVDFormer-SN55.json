@@ -1,0 +1,24 @@
+{
+  "create_variants": true,
+  "prefix": "00010000-",
+  "copiedOutputsDir": "../predicted",
+  "preprocessing": {
+    "optimal_points": 2048,
+    "max_points": 6144
+  },
+  "pccConfig": {
+    "type": ["SVDFormer", "ShapeNet-55"],
+    "fullRootDir": "/home/darkmark/Documents/Python/SVDFormer/SVDFormer_PointSea-main",
+    "runDir": ".",
+    "inferenceCommand": "python main_55.py --test",
+    "directoriesToClear": ["demo/SN55/partial", "demo/SN55/complete", "SVDFormer_55"],
+    "partialDir": "demo/SN55/partial",
+    "completeDir": "demo/SN55/complete",
+    "datasetConfigDir": "datasets/ShapeNet55",
+    "outputsDir": "SVDFormer_55/00010000"
+  },
+  "postprocessing": {
+    "remove_duplicates": true,
+    "max_outlier_distances": [0.005, 0.006, 0.007, 0.008]
+  }
+}

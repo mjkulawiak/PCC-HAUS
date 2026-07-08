@@ -1,0 +1,24 @@
+{
+  "create_variants": true,
+  "prefix": "00010000-",
+  "copiedOutputsDir": "../predicted",
+  "preprocessing": {
+    "optimal_points": 2048,
+    "max_points": 6144
+  },
+  "pccConfig": {
+    "type": ["SeedFormer", "PCN"],
+    "fullRootDir": "/home/darkmark/Documents/Python/SeedFormer/seedformer-master",
+    "runDir": "codes",
+    "inferenceCommand": "python train_pcn.py --test --output 1 --pretrained ../pretrained/pcn",
+    "directoriesToClear": ["data/PCN/data_pcd", "pretrained/pcn/outputs"],
+    "partialDir": "data/PCN/data_pcd/test/partial",
+    "completeDir": "data/PCN/data_pcd/test/complete",
+    "datasetConfigDir": "codes/datasets",
+    "outputsDir": "pretrained/pcn/outputs/04460130"
+  },
+  "postprocessing": {
+    "remove_duplicates": true,
+    "max_outlier_distances": [0.005, 0.006, 0.007, 0.008]
+  }
+}

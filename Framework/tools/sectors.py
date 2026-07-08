@@ -4,6 +4,9 @@ import shutil
 import os, sys
 import copy
 import traceback
+import subprocess
+import datetime
+import json
 from tools import common_tools
 from tools import distance
 from tools import pcd_io
@@ -786,7 +789,8 @@ def fix_dots_in_filenames(dirPath, removeMode:bool, inputExtension:str='.*', isD
 
 def _sf_preprocess_file(partialFile, outDir, completeFile=None, optimalPointCount:int=2048, maxSectPoints:int=6144,
                         numberPrefix='00010000-', createVariants:bool=False, variantsOffset:float=0.33,
-                        oldRecalculation:bool=False, maxRefSectPoints=8192, minPointsForSampling:int=1536):
+                        oldRecalculation:bool=False, maxRefSectPoints=8192, minPointsForSampling:int=1536,
+                        roof_thinning_ratio:float=-1.0):
     lastDotIndex = Path(partialFile).name.rindex('.')
     sectPrefix = Path(partialFile).name[:lastDotIndex] + '_'
     destFilePrefix = ''
@@ -799,7 +803,14 @@ def _sf_preprocess_file(partialFile, outDir, completeFile=None, optimalPointCoun
     partialSinglesDir = os.path.join(dataObjDir, 'partial_singles')
     completeSectorsDir = os.path.join(dataObjDir, 'complete_sectors')
     completeSinglesDir = os.path.join(dataObjDir, 'complete_singles')
-    partialSingleFile = os.path.join(partialSinglesDir, destFilePrefix+Path(partialFile).name)
+
+    if (roof_thinning_ratio >= 0 and roof_thinning_ratio <= 1):
+        thinnedRoofsDir = os.path.join(outDir, 'thinned_roofs')
+        inCoords = common_tools.read_point_cloud(partialFile)
+        _, walls = distance.select_sparse_roofs(inCoords, 0.5, 1.0-roof_thinning_ratio)
+        partialFile = os.path.join(thinnedRoofsDir, Path(partialFile).name)
+        pcd_io.coords_to_file(walls, partialFile)
+
     sectResult = sectorize(partialFile, partialSectorsDir, sectPrefix, maxSectPoints, optimalPointCount, True, '.obj',
                            createVariants, variantsOffset, minPointsForSampling)
     #if (sectResult == 0):
@@ -809,8 +820,15 @@ def _sf_preprocess_file(partialFile, outDir, completeFile=None, optimalPointCoun
     #else:
     if (sectResult != 0):
         # Point cloud was not sectorized and will be treated as a standalone "single" file.
+        partialSingleFile = os.path.join(partialSinglesDir, destFilePrefix+Path(partialFile).name)
         os.makedirs(os.path.dirname(partialSingleFile), exist_ok=True)
         shutil.copy(partialFile, partialSingleFile)
+        inCoords = common_tools.read_point_cloud(partialSingleFile)
+        # Upsample the single partial point cloud if it is too small.
+        if (len(inCoords) < optimalPointCount):
+            inCoords = common_tools.sample_data(pointCloud=inCoords, minPointCount=optimalPointCount, maxPointCount=optimalPointCount,
+                                                randomRadius=0.001)
+            pcd_io.coords_to_file(inCoords, partialSingleFile)
     
     if (completeFile is not None and os.path.isfile(completeFile)):
         completeSingleFile = os.path.join(completeSinglesDir, destFilePrefix+Path(completeFile).name)
@@ -827,8 +845,7 @@ def _sf_preprocess_file(partialFile, outDir, completeFile=None, optimalPointCoun
 
 def _sf_convert_partial_pcn(partialSectorsDir, partialPcdDir):
     for path in os.listdir(partialSectorsDir):
-        lastDotIndex = path.rindex('.')
-        pathWithoutExt = path[:lastDotIndex]
+        pathWithoutExt = common_tools.path_without_extension(path)
         srcPath = os.path.join(partialSectorsDir, path)
         dstPath = os.path.join(partialPcdDir, pathWithoutExt, '00.pcd')
         pcd_io.convert(srcPath, dstPath)
@@ -909,11 +926,12 @@ def _sf_preprocess_finalize(outDir, pcn:bool=False, optimalPointCount:int=2048):
         f = open(categoryFile, 'w')
         f.write(f'{taxonomyName}\n')
         f.close()
-        jsonFile = os.path.join(dataPcdDir, 'PCN.json')
+        jsonFile = os.path.join(dataPcdDir, 'ShapeNet.json')
         pcd_io.create_pcd_json(jsonFile)
 
 def sf_preprocess(inDirPartial, outDir, inDirComplete=None, optimalPointCount:int=2048, maxSectPoints:int=6144, numberPrefix='00010000-',
-                  createVariants:bool=False, variantsOffset:float=0.33, oldRecalculation:bool=False, pcn:bool=False, minPointsForSampling:int=1536):
+                  createVariants:bool=False, variantsOffset:float=0.33, oldRecalculation:bool=False, pcn:bool=False, minPointsForSampling:int=1536,
+                  roof_thinning_ratio:float=-1.0):
     for path in os.listdir(inDirPartial):
         partialPath = os.path.join(inDirPartial, path)
         if (os.path.isfile(partialPath)):
@@ -927,12 +945,92 @@ def sf_preprocess(inDirPartial, outDir, inDirComplete=None, optimalPointCount:in
             if (pcn):
                 maxRefSectPoints *= 2
             _sf_preprocess_file(partialPath, outDir, completePath, optimalPointCount, maxSectPoints, numberPrefix,
-                                createVariants, variantsOffset, oldRecalculation, maxRefSectPoints, minPointsForSampling)
+                                createVariants, variantsOffset, oldRecalculation, maxRefSectPoints, minPointsForSampling,
+                                roof_thinning_ratio)
     _sf_preprocess_finalize(outDir, pcn)
+
+def sf_preprocess_preset(inDirPartial, outDir, presetPath, inDirComplete=None, variantsOffset:float=0.33, oldRecalculation:bool=False,
+                         minPointsForSampling:int=1536, roof_thinning_ratio:float=-1.0):
+    jsonFile = open(presetPath, 'r')
+    preset = json.load(jsonFile)
+    pcn:bool = False
+    pccType = preset["pccConfig"]["type"]
+    if ("former" in pccType[0].lower() and "pcn" in pccType[1].lower()):
+        pcn = True
+    sf_preprocess(inDirPartial=inDirPartial, outDir=outDir, inDirComplete=inDirComplete, optimalPointCount=preset["preprocessing"]["optimal_points"],
+                  maxSectPoints=preset["preprocessing"]["max_points"], numberPrefix=preset["prefix"], createVariants=preset["create_variants"],
+                  variantsOffset=variantsOffset, oldRecalculation=oldRecalculation, pcn=pcn, minPointsForSampling=minPointsForSampling,
+                  roof_thinning_ratio=roof_thinning_ratio)
+    jsonFile.close()
+
+def sf_inference(preprocessDir, presetPath):
+    jsonFile = open(presetPath, 'r')
+    preset = json.load(jsonFile)
+    pccType = preset["pccConfig"]["type"]
+    pccRootDir = preset["pccConfig"]["fullRootDir"]
+    pccRunDir = Path(pccRootDir, preset["pccConfig"]["runDir"])
+    inferenceCommand = preset["pccConfig"]["inferenceCommand"].split()
+    pccPartialDir = Path(pccRootDir, preset["pccConfig"]["partialDir"])
+
+    pccCompleteDir = None
+    if ("completeDir" in preset["pccConfig"]):
+        pccCompleteDir = Path(pccRootDir, preset["pccConfig"]["completeDir"])
+    datasetConfigDir = None
+    if ("datasetConfigDir" in preset["pccConfig"]):
+        datasetConfigDir = Path(pccRootDir, preset["pccConfig"]["datasetConfigDir"])
+    
+    outputsDir = Path(pccRootDir, preset["pccConfig"]["outputsDir"])
+    predictedDir = Path(preprocessDir, preset["copiedOutputsDir"])
+    jsonFile.close()
+
+    # Clear existing input and output files.
+    directoriesToClear = preset["pccConfig"]["directoriesToClear"]
+    for directory in directoriesToClear:
+        fullDirPath = Path(pccRootDir, directory)
+        common_tools.clear_directory(fullDirPath)
+    
+    # Copy the input files.
+    if ("former" in pccType[0].lower() and "pcn" in pccType[1].lower()):
+        preprocPartialDir = Path(preprocessDir, "data_pcd", "test", "partial")
+        preprocCompleteDir = Path(preprocessDir, "data_pcd", "test", "complete")
+    else:
+        preprocPartialDir = Path(preprocessDir, "data_npy", "partial")
+        preprocCompleteDir = Path(preprocessDir, "data_npy", "complete")
+    shutil.copytree(preprocPartialDir, pccPartialDir, dirs_exist_ok=True)
+    if (pccCompleteDir is not None):
+        shutil.copytree(preprocCompleteDir, pccCompleteDir, dirs_exist_ok=True)
+    if (datasetConfigDir is not None and os.path.isdir(datasetConfigDir)):
+        if ("former" in pccType[0].lower() and "pcn" in pccType[1].lower()):
+            inShapeNet = Path(preprocessDir, "data_pcd", "ShapeNet.json")
+            #inCategory = Path(preprocessDir, "data_pcd", "category.txt")
+            outShapeNet = Path(datasetConfigDir, "ShapeNet.json")
+            #outCategory = Path(datasetConfigDir, "category.txt")
+            shutil.copy(inShapeNet, outShapeNet)
+            #shutil.copy(inCategory, outCategory)
+        else:
+            inTest = Path(preprocessDir, "data_npy", "test.txt")
+            inTrain = Path(preprocessDir, "data_npy", "train.txt")
+            outTest = Path(datasetConfigDir, "test.txt")
+            outTrain = Path(datasetConfigDir, "train.txt")
+            shutil.copy(inTest, outTest)
+            shutil.copy(inTrain, outTrain)
+
+    print(f'INFERENCE START: {datetime.datetime.now().strftime("%Y.%m.%d %H:%M:%S.%f")}\n')
+    pccResult = subprocess.run(inferenceCommand, cwd=pccRunDir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    print("PCC output:", pccResult.stdout)
+    print("PCC errors:", pccResult.stderr)
+    print("PCC return code:", pccResult.returncode)
+    print(f'\nINFERENCE END: {datetime.datetime.now().strftime("%Y.%m.%d %H:%M:%S.%f")}')
+
+    # Copy results.
+    if (os.path.isdir(predictedDir)):
+        common_tools.clear_directory(predictedDir)
+    print(f'Copying results to: {predictedDir}')
+    shutil.copytree(outputsDir, predictedDir, dirs_exist_ok=True)
 
 def sf_postprocess(predictedDir, preprocessDir, numberPrefix='00010000-', createVariants:bool=False, variantsOffset:float=0.33,
                    oldRecalculation:bool=False, removeDuplicates:bool=True, bpcc:bool=False, resultsDirName:str='results',
-                   inDirPartial=None):
+                   inDirPartial=None, maxDistances:list=[0.005, 0.006, 0.007, 0.008], z_weight:float=1.0):
     if (numberPrefix is None):
         numberPrefix = ''
     
@@ -950,6 +1048,7 @@ def sf_postprocess(predictedDir, preprocessDir, numberPrefix='00010000-', create
     partialSinglesDir = os.path.join(dataObjDir, 'partial_singles')
     #partialSectorsUnscaledDir = os.path.join(dataObjDir, 'partial_sectors_unscaled')
 
+    number_of_copied:int = 0
     for path in os.listdir(predictedDir):
         srcPath = os.path.join(predictedDir, path)
         if os.path.isfile(srcPath) and (srcPath.lower().endswith(suffixes[0]) or srcPath.lower().endswith(suffixes[1])):
@@ -962,6 +1061,7 @@ def sf_postprocess(predictedDir, preprocessDir, numberPrefix='00010000-', create
                 dstPath = os.path.join(tempDir, dstFilename)
                 os.makedirs(os.path.dirname(dstPath), exist_ok=True)
                 shutil.copy(srcPath, dstPath)
+                number_of_copied += 1
             else:
                 # Check if it's one of non-sectorized files and copy it to the final dir instead.
                 suffixIndex = path.rindex(suffixes[0])
@@ -976,12 +1076,18 @@ def sf_postprocess(predictedDir, preprocessDir, numberPrefix='00010000-', create
                         dstPath = os.path.join(resultsDir, finalBaseName + '.obj')
                         pcd_io.convert(srcPath, dstPath)
                         copyToTemp = False
+                        number_of_copied += 1
                         break
                 if copyToTemp:
                     dstPath = os.path.join(tempDir, dstFilename)
                     os.makedirs(os.path.dirname(dstPath), exist_ok=True)
                     shutil.copy(srcPath, dstPath)
+                    number_of_copied += 1
     
+    if (number_of_copied <= 0):
+        common_tools.force_print_to_console(f'ERROR: no result files were found in the following path: {predictedDir}')
+        return
+
     if not bpcc:
         # Normalize the non-sectorized data and move it to the results dir.
         for path in os.listdir(partialSinglesDir):
@@ -1059,21 +1165,37 @@ def sf_postprocess(predictedDir, preprocessDir, numberPrefix='00010000-', create
                 baseName = path[:lastDotIndex]
                 tempNames = list(filter(lambda x: baseName in x, inputNames))
                 print(f'tempNames: {tempNames}')
+                
                 if (len(tempNames) > 0):
                     inputName = tempNames[0]
                     inPath = os.path.join(inDirPartial, inputName)
                     inCoords = common_tools.read_point_cloud(inPath)
-                    resPath = os.path.join(resultsDir, path)
-                    #resCoords = common_tools.read_point_cloud(resPath)
-                    filteredPath = os.path.join(resultsDir, baseName+'_filter.obj')
-                    print(f'Saving {Path(filteredPath).name}')
-                    resCoords = distance.select_and_remove_outliers(resPath, inPath, filteredPath, 0.0075)
-                    resCoords.extend(inCoords)
-                    if (removeDuplicates):
-                        oldCount = len(resCoords)
-                        resCoords = common_tools.downsample_points(resCoords)
-                        newCount = len(resCoords)
-                        print(f'Downsampled merged point cloud from {oldCount} to {newCount} points.')
-                    outPath = os.path.join(resultsDir, baseName+'_filter_merge.obj')
-                    print(f'Saving {Path(outPath).name}')
-                    pcd_io.coords_to_file(resCoords, outPath)
+                    for dist in maxDistances:
+                        resPath = os.path.join(resultsDir, path)
+                        #resCoords = common_tools.read_point_cloud(resPath)
+                        filteredPath = os.path.join(resultsDir, baseName+'_filter-'+str(dist)+'.obj')
+                        print(f'Saving {Path(filteredPath).name}')
+                        resCoords = distance.select_and_remove_outliers(resPath, inPath, filteredPath, dist, z_weight)
+
+                        resCoords.extend(inCoords)
+                        if (removeDuplicates):
+                            oldCount = len(resCoords)
+                            resCoords = common_tools.downsample_points(resCoords)
+                            newCount = len(resCoords)
+                            print(f'Downsampled merged point cloud from {oldCount} to {newCount} points.')
+                        outPath = os.path.join(resultsDir, baseName+'_filter-'+str(dist)+'_merge.obj')
+                        print(f'Saving {Path(outPath).name}')
+                        pcd_io.coords_to_file(resCoords, outPath)
+
+def sf_postprocess_preset(predictedDir, preprocessDir, presetPath, variantsOffset:float=0.33, oldRecalculation:bool=False,
+                          resultsDirName:str='results', inDirPartial=None, z_weight:float=1.0):
+    jsonFile = open(presetPath, 'r')
+    preset = json.load(jsonFile)
+    bpcc:bool = False
+    pccType = preset["pccConfig"]["type"]
+    if ("pointr" in pccType[0].lower()):
+        bpcc = True
+    sf_postprocess(predictedDir=predictedDir, preprocessDir=preprocessDir, numberPrefix=preset["prefix"], createVariants=preset["create_variants"],
+                   variantsOffset=variantsOffset, oldRecalculation=oldRecalculation, removeDuplicates=preset["postprocessing"]["remove_duplicates"],
+                   bpcc=bpcc, resultsDirName=resultsDirName, inDirPartial=inDirPartial, maxDistances=preset["postprocessing"]["max_outlier_distances"], z_weight=z_weight)
+    jsonFile.close()

@@ -1,0 +1,22 @@
+{
+  "create_variants": true,
+  "prefix": "",
+  "copiedOutputsDir": "../predicted",
+  "preprocessing": {
+    "optimal_points": 2048,
+    "max_points": 6144
+  },
+  "pccConfig": {
+    "type": ["AdaPoinTr", "PCN"],
+    "fullRootDir": "/home/darkmark/Documents/Python/PoinTr/PoinTr-master",
+    "runDir": ".",
+    "inferenceCommand": "python tools/inference.py cfgs/PCN_models/AdaPoinTr.yaml pretrained/AdaPoinTr_PCN.pth --pc_root _input/ --out_pc_root _output/AdaPoinTr_PCN/",
+    "directoriesToClear": ["_input", "_output"],
+    "partialDir": "_input",
+    "outputsDir": "_output/AdaPoinTr_PCN/npy"
+  },
+  "postprocessing": {
+    "remove_duplicates": true,
+    "max_outlier_distances": [0.005, 0.006, 0.007, 0.008]
+  }
+}

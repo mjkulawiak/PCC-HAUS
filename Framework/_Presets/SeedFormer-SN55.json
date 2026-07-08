@@ -1,0 +1,24 @@
+{
+  "create_variants": true,
+  "prefix": "00010000-",
+  "copiedOutputsDir": "../predicted",
+  "preprocessing": {
+    "optimal_points": 2048,
+    "max_points": 6144
+  },
+  "pccConfig": {
+    "type": ["SeedFormer", "ShapeNet-55"],
+    "fullRootDir": "/home/darkmark/Documents/Python/SeedFormer/seedformer-master",
+    "runDir": "codes",
+    "inferenceCommand": "python train_shapenet55.py --test --output 1 --pretrained ../pretrained/shapenet55",
+    "directoriesToClear": ["data/partial", "data/complete", "pretrained/shapenet55/ShapeNet-55"],
+    "partialDir": "data/partial",
+    "completeDir": "data/complete",
+    "datasetConfigDir": "codes/datasets/ShapeNet55-34/ShapeNet-55",
+    "outputsDir": "pretrained/shapenet55/ShapeNet-55/median/outputs/00010000"
+  },
+  "postprocessing": {
+    "remove_duplicates": true,
+    "max_outlier_distances": [0.005, 0.006, 0.007, 0.008]
+  }
+}

@@ -9,7 +9,7 @@ import traceback
 from tools import common_tools
 from tools import distance
 
-def coords_to_file(coords:list, outFile):
+def coords_to_file(coords:list, outFile, scale:list=[1.0,1.0,1.0]):
     Path(outFile).parent.mkdir(parents=True, exist_ok=True)
 
     if outFile.lower().endswith('.xyz'):

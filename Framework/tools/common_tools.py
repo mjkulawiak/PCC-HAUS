@@ -1,8 +1,20 @@
 import numpy as np
 import os
+import sys
 import shutil
 import random
 import open3d as o3d
+
+def force_print_to_console(message, skip_log:bool=False):
+    if (not skip_log):
+        print(message)
+    temp_stdout = sys.stdout
+    temp_stderr = sys.stderr
+    sys.stdout = sys.__stdout__
+    sys.stderr = sys.__stderr__
+    print(message)
+    sys.stdout = temp_stdout
+    sys.stderr = temp_stderr
 
 def scale_to_new_range(value, old_min,old_max, new_min,new_max):
     old_range = (old_max - old_min)
@@ -56,6 +68,19 @@ def count_files(dirPath):
             if fullPath.lower().endswith('.xyz') or fullPath.lower().endswith('.obj'):
                 count += 1
     return count
+
+def clear_directory(dirPath):
+    print(f'Clearing {dirPath.name}.')
+    if (os.path.isdir(dirPath)):
+        for filename in os.listdir(dirPath):
+            fullPath = os.path.join(dirPath, filename)
+            try:
+                if os.path.isfile(fullPath) or os.path.islink(fullPath):
+                    os.unlink(fullPath)
+                elif os.path.isdir(fullPath):
+                    shutil.rmtree(fullPath)
+            except Exception as e:
+                print(f'Failed to delete {fullPath}: {e}')
 
 def read_xyz(filepath, scale:list=[1.0,1.0,1.0]) -> list:
     coords = []
@@ -251,3 +276,8 @@ def hasPointsOutsideBorders2D(min1:list, max1:list, min2:list, max2:list):
 
 def hasPointsOutsideBorders3D(min1:list, max1:list, min2:list, max2:list):
     return (bboxCollide3D(min1,max1, min2,max2) and not bboxWithin3D(min1,max1, min2,max2))
+
+def path_without_extension(filepath):
+    lastDotIndex = filepath.rindex('.')
+    pathWithoutExt = filepath[:lastDotIndex]
+    return pathWithoutExt

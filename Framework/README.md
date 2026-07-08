@@ -14,7 +14,7 @@ pip install -r requirements.txt
 ```
 
 ### Usage
-The process is automatic and is performed in three steps:
+The process is automatic and performed in three steps:
 1. Preprocessing of the partial data;
 2. Configuring the preinstalled point cloud completion framework and executing its inference commands;
 3. Postprocessing the completion results.
